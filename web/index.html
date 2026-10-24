@@ -162,7 +162,7 @@ label.t{display:block;font-size:12px;color:var(--muted);margin-bottom:6px;letter
 
 <script>
 // Set this to your deployed backend URL (e.g. https://xyz.hf.space). Empty = same origin.
-const API = (window.CLIPCUT_API || "").replace(/\/$/, "");
+const API = (window.CLIPCUT_API || "https://clipcut-api.onrender.com").replace(/\/$/, "");
 
 const $ = id => document.getElementById(id);
 let duration = 0, quality = "720";
