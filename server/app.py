@@ -1,3 +1,4 @@
+import logging
 import os
 import re
 import shutil
@@ -11,6 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
+log = logging.getLogger("uvicorn.error")
 app = FastAPI(title="ClipCut")
 
 ALLOWED = [o.strip() for o in os.getenv("ALLOWED_ORIGINS", "*").split(",")]
@@ -45,7 +47,10 @@ def _check_url(url: str):
 
 
 def _ytdlp_base():
-    cmd = ["yt-dlp", "--no-playlist", "--no-warnings"]
+    cmd = [
+        "yt-dlp", "--no-playlist", "--no-warnings",
+        "--extractor-args", "youtube:player_client=tv,mweb,web_safari,ios",
+    ]
     cookies = os.getenv("YT_COOKIES_FILE")
     if cookies and Path(cookies).exists():
         cmd += ["--cookies", cookies]
@@ -70,6 +75,7 @@ def info(req: InfoReq):
     except subprocess.TimeoutExpired:
         raise HTTPException(504, "YouTube took too long to respond.")
     if out.returncode != 0:
+        log.error("info failed: %s", out.stderr[-800:])
         raise HTTPException(422, "Couldn't read that video. It may be private or blocked.")
     lines = out.stdout.strip().split("\n")
     title = lines[0] if lines else "video"
@@ -123,6 +129,7 @@ def clip(req: ClipReq, bg: BackgroundTasks):
 
     files = list(Path(work).glob(f"{name}.*"))
     if res.returncode != 0 or not files:
+        log.error("clip failed: %s", res.stderr[-800:])
         _cleanup(work)
         raise HTTPException(422, "Download failed. YouTube may be blocking the server.")
 
